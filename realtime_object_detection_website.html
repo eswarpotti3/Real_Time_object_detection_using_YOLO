@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Real-Time Object Detection</title>
+<style>
+ body {
+   margin: 0;
+   padding: 0;
+   font-family: Arial, sans-serif;
+   background: #539465;
+   color: #fff;
+ }
+ header, section {
+   padding: 40px;
+   text-align: center;
+ }
+ h1, h2 {
+   margin-bottom: 20px;
+ }
+ .gallery {
+   display: flex;
+   justify-content: center;
+   gap: 20px;
+   flex-wrap: wrap;
+   margin-top: 20px;
+ }
+ .gallery img, .gallery video {
+   width: 500px;
+   border-radius: 10px;
+ }
+ #camera-section {
+   margin-top: 40px;
+ }
+ #video {
+   width: 80vw;
+   max-width: 600px;
+   border: 3px solid #fff;
+   border-radius: 10px;
+ }
+ .cta-btn {
+   background: #2274ff;
+   padding: 12px 25px;
+   border-radius: 8px;
+   cursor: pointer;
+   border: none;
+   font-size: 16px;
+   margin-top: 20px;
+ }
+ footer {
+   margin-top: 60px;
+   text-align: center;
+   padding: 30px;
+   background: #130109;
+ }
+ footer a {
+   color: #45a6ff;
+   text-decoration: none;
+ }
+</style>
+</head>
+<body>
+<header>
+ <h1>Real-Time Object Detection</h1>
+ <p>Detect objects live from your camera using advanced YOLO Models</p>
+</header>
+<section>
+ <h2>Importance of Real-Time Object Detection</h2>
+ <p>Object detection helps in security surveillance, autonomous driving, retail analytics, medical imaging, and more. It enhances decision making and allows machines to understand the environment in real time.</p>
+</section>
+<section>
+ <h2>How YOLO Works (Simple Steps)</h2>
+ <p>1. Split the image into a grid.<br>2. Predict bounding boxes and confidence scores.<br>3. Identify the object with highest probability.<br>4. Draw boxes and labels on detected objects.</p>
+</section>
+<section>
+ <h2>Sample Outputs</h2>
+ <div class="gallery">
+   <video src="new video.mp4" controls></video>
+   <video src="Real_Time_Object_Detection.mp4" controls></video>
+ </div>
+</section>
+<section id="camera-section">
+ <h2>Try It Yourself</h2>
+ <p>Click below to allow camera access and detect objects</p>
+ <button class="cta-btn" onclick="startCamera()">Start Camera</button>
+ <button class="cta-btn" onclick="stopCamera()" style="background:#ff4444;margin-left:10px;">Stop Camera</button>
+ <br><br>
+ <video id="video" autoplay playsinline></video>
+</section>
+<footer>
+ <p>Project by: Eswar Potti</p>
+ <p>
+   <a href="https://www.linkedin.com/in/eswar-potti" target="_blank">LinkedIn</a> |
+   <a href="https://github.com/eswarpotti3" target="_blank">GitHub</a> |
+   <a href="Contact" target="_blank">GitHub</a> |
+ </p>
+</footer>
+<script>
+const video = document.getElementById('video');
+let overlayCanvas;
+
+async function startCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+  window._cameraStream = stream; // store for stop
+  video.onplaying = () => {
+    setupOverlay();
+    detectFrame();
+  };
+}
+
+function setupOverlay() {
+  if (!overlayCanvas) {
+    overlayCanvas = document.createElement('canvas');
+    overlayCanvas.style.position = 'absolute';
+    overlayCanvas.style.top = video.offsetTop + 'px';
+    overlayCanvas.style.left = video.offsetLeft + 'px';
+    document.body.appendChild(overlayCanvas);
+  }
+  overlayCanvas.width = video.videoWidth;
+  overlayCanvas.height = video.videoHeight;
+}
+
+async function detectFrame() {
+  if (!video || video.readyState !== 4) return;
+
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = video.videoWidth;
+  tempCanvas.height = video.videoHeight;
+  const ctx = tempCanvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  tempCanvas.toBlob(async (blob) => {
+    const formData = new FormData();
+    formData.append('file', blob, 'frame.jpg');
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/detect', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      drawBoxes(data.detections);
+    } catch (error) {
+      console.error('Error contacting YOLO API:', error);
+    }
+
+    // Wait 500ms before next detection
+    setTimeout(() => requestAnimationFrame(detectFrame), 500);
+  }, 'image/jpeg');
+}
+
+
+function drawBoxes(detections) {
+  const ctx = overlayCanvas.getContext('2d');
+  ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+  // Scale model output to video display
+  const scaleX = video.videoWidth / overlayCanvas.width;
+  const scaleY = video.videoHeight / overlayCanvas.height;
+
+  ctx.strokeStyle = 'lime';
+  ctx.lineWidth = 2;
+  ctx.font = '16px Arial';
+  ctx.fillStyle = 'lime';
+
+  detections.forEach(det => {
+    let [x1, y1, x2, y2] = det.box;
+
+    x1 /= scaleX;
+    y1 /= scaleY;
+    x2 /= scaleX;
+    y2 /= scaleY;
+
+    ctx.strokeRect(x1, y1, (x2 - x1), (y2 - y1));
+    ctx.fillText(`${det.label} (${det.confidence.toFixed(2)})`, x1, y1 - 5);
+  });
+}
+function stopCamera() {
+  if (window._cameraStream) {
+    window._cameraStream.getTracks().forEach(track => track.stop());
+  }
+  if (overlayCanvas) {
+    const ctx = overlayCanvas.getContext('2d');
+    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  }
+}
+</script>
+</body>
+</html>
