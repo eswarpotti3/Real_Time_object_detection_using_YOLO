@@ -1,12 +1,16 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
 import numpy as np
 import cv2
+import os
 
 app = FastAPI()
 
-# Allow website → backend communication
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,17 +19,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load YOLOv10n (same as your local script)
+# Load YOLO model
 model = YOLO("yolov10n.pt")
 print("Classes loaded:", model.names)
 
+# Templates folder
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# Serve static files (CSS, JS, videos)
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+
+# Serve homepage
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# YOLO detection endpoint
 @app.post("/detect")
 async def detect(file: UploadFile = File(...)):
     img_bytes = await file.read()
     img_arr = np.frombuffer(img_bytes, np.uint8)
     frame = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
 
-    # Run detection with confidence threshold lowered to detect small objects
     results = model(frame, conf=0.25, iou=0.5)
 
     detections = []
