@@ -175,7 +175,7 @@ http://127.0.0.1:8000/
 
 ## 🎨 Demo
 
-![Demo GIF Placeholder](Real_Time_Object_Detection.mp4)
+![Demo GIF Placeholder](Real_Time_Object_Detection.gif)
 
 ----------
 
