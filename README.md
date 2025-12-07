@@ -175,7 +175,14 @@ http://127.0.0.1:8000/
 
 ## 🎨 Demo
 
-![Demo GIF Placeholder](https://via.placeholder.com/800x400?text=Real-Time+Object+Detection+Demo)
+![Demo GIF Placeholder](Real_Time_Object_Detection.mp4)
+
+----------
+
+##   Web Interface
+
+![web interface sample photo 1](img1.png)
+![web interface sample photo 2](img2.jpg)
 
 ----------
 

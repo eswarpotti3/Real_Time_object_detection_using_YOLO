@@ -4,7 +4,7 @@ import cv2
 #Detecting on images
 model=YOLO('yolov10n.pt')
 
-# results=model('wp8691169-master-thalapathy-wallpapers.jpg')
+# results=model('sample image.jpg')
 # results[0].show()
 # print(results)
 # print(results[0].boxes.xyxy.numpy().astype('int32'))
